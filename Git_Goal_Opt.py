@@ -153,7 +153,7 @@ if uploaded_file is not None:
         
         # On introduit des variables de déviation pour rapprocher la répartition de la cible
         # Pour chaque palier j, la cible est T_j = (p_j/100) * N
-        lambda_penalty = 1000  # Coefficient de pénalité (à ajuster)
+        lambda_penalty = 10000  # Coefficient de pénalité (à ajuster)
         s_plus = pulp.LpVariable.dicts("s_plus", paliers, lowBound=0, cat=pulp.LpContinuous)
         s_minus = pulp.LpVariable.dicts("s_minus", paliers, lowBound=0, cat=pulp.LpContinuous)
     
