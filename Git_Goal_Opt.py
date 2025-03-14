@@ -69,10 +69,10 @@ if uploaded_file is not None:
     # Calcul dynamique de total_mois basé sur la moyenne journalière
     moyenne_journaliere = total_deja / jour_du_mois if jour_du_mois > 0 else 0
     total_mois = total_deja + round(jours_restants * moyenne_journaliere)
-    st.write(f"**Estimation du total mensuel** = {total_mois}")
+    # st.write(f"**Estimation du total mensuel** = {total_mois}")
     
     R = total_mois - total_deja
-    st.write(f"**Km restants à répartir** = {R}")
+    # st.write(f"**Km restants à répartir** = {R}")
     
     # Paramètres de Δ
     min_km_par_camion = jours_restants * 100   # 100 km/jour minimum → Δ_min
