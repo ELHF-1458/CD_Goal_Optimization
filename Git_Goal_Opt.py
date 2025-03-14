@@ -14,7 +14,7 @@ logging.basicConfig(filename="debug.log", level=logging.DEBUG,
                     format="%(asctime)s %(levelname)s: %(message)s")
 logging.info("Application démarrée.")
 
-st.title("Optimisation de répartition des kilomètres")
+st.title("Optimisation de répartition des kilomètres (Objective)")
 st.write("Chargez votre fichier d'entrée et définissez les paramètres.")
 
 # --- Barre latérale ---
