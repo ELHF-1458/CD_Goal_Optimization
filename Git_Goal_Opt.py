@@ -32,11 +32,11 @@ fuel_price = st.sidebar.number_input("Prix Carburant (MAD/L)", value=20.0, step=
 st.sidebar.write(f"Prix Carburant actuel : {fuel_price} MAD/L")
 
 st.sidebar.header("Répartition par palier (%)")
-p0 = st.sidebar.slider("Palier [0 - 4000]", 0, 100, 5, 1)
-p1 = st.sidebar.slider("Palier [4000 - 8000]", 0, 100, 5, 1)
-p2 = st.sidebar.slider("Palier [8000 - 11000]", 0, 100, 74, 1)
-p3 = st.sidebar.slider("Palier [11001 - 14000]", 0, 100, 8, 1)
-p4 = st.sidebar.slider("Palier (>14000)", 0, 100, 8, 1)
+p0 = st.sidebar.slider("Palier [0 - 4000]", 0, 100, 20, 1)
+p1 = st.sidebar.slider("Palier [4000 - 8000]", 0, 100, 20, 1)
+p2 = st.sidebar.slider("Palier [8000 - 11000]", 0, 100, 20, 1)
+p3 = st.sidebar.slider("Palier [11001 - 14000]", 0, 100, 20, 1)
+p4 = st.sidebar.slider("Palier (>14000)", 0, 100, 20, 1)
 total_pourc = p0 + p1 + p2 + p3 + p4
 st.sidebar.write(f"Somme des pourcentages : {total_pourc} %")
 if total_pourc != 100:
