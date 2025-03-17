@@ -28,8 +28,8 @@ jours_restants = days_in_month - jour_du_mois
 st.sidebar.write(f"Jours restants dans le mois : {jours_restants}")
 
 # Champ pour Δ_min et Δ_max (en km/jour)
-delta_min_day = st.sidebar.number_input("Δ_min (km/jour)", value=100, step=10, format="%.0f")
-delta_max_day = st.sidebar.number_input("Δ_max (km/jour)", value=650, step=10, format="%.0f")
+delta_min_day = st.sidebar.number_input("Δ_min (km/jour)", value=100.0, step=10.0, format="%.0f")
+delta_max_day = st.sidebar.number_input("Δ_max (km/jour)", value=550.0, step=10.0, format="%.0f")
 
 # Nouveau champ pour le prix carburant
 fuel_price = st.sidebar.number_input("Prix Carburant (MAD/L)", value=20.0, step=0.1, format="%.2f")
