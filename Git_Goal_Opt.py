@@ -27,6 +27,10 @@ jour_du_mois = ref_date.day
 jours_restants = days_in_month - jour_du_mois
 st.sidebar.write(f"Jours restants dans le mois : {jours_restants}")
 
+# Champ pour Δ_min et Δ_max (en km/jour)
+delta_min_day = st.sidebar.number_input("Δ_min (km/jour)", value=100, step=10, format="%.0f")
+delta_max_day = st.sidebar.number_input("Δ_max (km/jour)", value=650, step=10, format="%.0f")
+
 # Nouveau champ pour le prix carburant
 fuel_price = st.sidebar.number_input("Prix Carburant (MAD/L)", value=20.0, step=0.1, format="%.2f")
 st.sidebar.write(f"Prix Carburant actuel : {fuel_price} MAD/L")
@@ -74,9 +78,10 @@ if uploaded_file is not None:
     R = total_mois - total_deja
     # st.write(f"**Km restants à répartir** = {R}")
     
-    # Paramètres de Δ
-    min_km_par_camion = jours_restants * 100   # 100 km/jour minimum → Δ_min
-    max_km_par_camion = jours_restants * 650   # Δ_max fixé à 650 km/jour
+    # Paramètres de Δ basés sur les inputs
+    min_km_par_camion = jours_restants * delta_min_day   # Δ_min (km/jour) * jours_restants
+    max_km_par_camion = jours_restants * delta_max_day   # Δ_max (km/jour) * jours_restants
+    #st.write(f"Δ_min = {min_km_par_camion} km, Δ_max = {max_km_par_camion} km")
     
     # Définition des paliers et intervalles
     L = [0, 4000, 8000, 11000, 14001]
