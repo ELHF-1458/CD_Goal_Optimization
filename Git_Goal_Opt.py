@@ -38,14 +38,9 @@ st.sidebar.write(f"Prix Carburant actuel : {fuel_price} MAD/L")
 # Sélecteur pour le mode de calcul du total mensuel
 mode_total = st.sidebar.selectbox("Mode de calcul du total mensuel", options=["Automatique", "Manuel"])
 if mode_total == "Manuel":
-    total_mois_manuel = st.sidebar.number_input(
-        "Total kilométrage prévu pour le mois",
-        value=100000.0,
-        step=1000.0,
-        format="%.0f"
-    )
+    total_mois_manuel = st.sidebar.number_input("Total kilométrage prévu pour le mois", value=100000.0, step=1000.0, format="%.0f")
 
-# Bloc de sliders pour la répartition par palier
+# Bloc de sliders pour la répartition par palier (%)
 st.sidebar.header("Répartition par palier (%)")
 p0 = st.sidebar.slider("Palier [0 - 4000]", 0, 100, 20, 1)
 p1 = st.sidebar.slider("Palier [4000 - 8000]", 0, 100, 20, 1)
@@ -59,10 +54,7 @@ if total_pourc != 100:
     st.stop()
 
 # --- Chargement du fichier d'entrée ---
-uploaded_file = st.file_uploader(
-    "Choisissez le fichier Excel d'entrée (colonnes : Transporteur, Immatriculation, Total)",
-    type=["xlsx"]
-)
+uploaded_file = st.file_uploader("Choisissez le fichier Excel d'entrée (colonnes : Transporteur, Immatriculation, Total)", type=["xlsx"])
 if uploaded_file is not None:
     try:
         df = pd.read_excel(uploaded_file)
@@ -74,57 +66,49 @@ if uploaded_file is not None:
 
     st.write("### Aperçu du fichier d'entrée")
     st.dataframe(df.head())
-    
+
     logging.info(f"Colonnes du fichier : {df.columns.tolist()}")
     if "Total" not in df.columns:
         st.error("La colonne 'Total' n'a pas été trouvée dans le fichier.")
         logging.error("Colonne 'Total' introuvable.")
         st.stop()
-    
-    # Liste des matricules pour saisie manuelle
+
+    # Mise à jour de la liste des matricules pour saisie manuelle
     matricules = df["Immatriculation"].unique()
-    selected_matricules = st.sidebar.multiselect(
-        "Sélectionnez les matricules pour saisie manuelle",
-        options=matricules
-    )
+    selected_matricules = st.sidebar.multiselect("Sélectionnez les matricules pour saisie manuelle", options=matricules)
 
     # Saisie manuelle pour les matricules sélectionnés
     manual_totals = {}
     if selected_matricules:
         st.sidebar.write("Saisissez le total mensuel pour chaque camion sélectionné :")
         for matricule in selected_matricules:
-            total_manual = st.sidebar.number_input(
-                f"Total mensuel pour {matricule}",
-                value=0.0,
-                step=1000.0,
-                format="%.0f"
-            )
+            total_manual = st.sidebar.number_input(f"Total mensuel pour {matricule}", value=0.0, step=1000.0, format="%.0f")
             manual_totals[matricule] = total_manual
 
     total_deja = df["Total"].sum()
     st.write(f"**Total déjà parcouru** = {total_deja}")
 
-    # Calcul du total mensuel selon le mode
+    # Calcul du total mensuel selon le mode choisi
     if mode_total == "Automatique":
         moyenne_journaliere = total_deja / jour_du_mois if jour_du_mois > 0 else 0
         total_mois = total_deja + round(jours_restants * moyenne_journaliere)
     else:
         total_mois = total_mois_manuel
+    st.write(f"**Total mensuel** = {total_mois}")
 
-    # st.write(f"**Total mensuel** = {total_mois}")
     R = total_mois - total_deja
-    # st.write(f"**Km restants à répartir** = {R}")
+    st.write(f"**Km restants à répartir** = {R}")
 
-    # Calcul de Δ_min et Δ_max
+    # Calcul de Δ_min et Δ_max sur l'ensemble des jours restants
     min_km_par_camion = jours_restants * delta_min_day
     max_km_par_camion = jours_restants * delta_max_day
 
-    # Camions manuels : calcul
+    # Préparer les données pour les camions manuels
     if selected_matricules:
         df_manual = df[df["Immatriculation"].isin(selected_matricules)].copy()
         df_manual["Total Mensuel Saisi"] = df_manual["Immatriculation"].map(manual_totals)
         df_manual["Km Restants (Manuel)"] = df_manual["Total Mensuel Saisi"] - df_manual["Total"]
-        # On stocke le "Total Finale" comme le total mensuel saisi
+        # Ici, pour les camions manuels, le Total Finale correspond à celui saisi manuellement
         df_manual["Total Finale"] = df_manual["Total Mensuel Saisi"]
     else:
         df_manual = pd.DataFrame()
@@ -137,13 +121,13 @@ if uploaded_file is not None:
 
     # Filtrer les camions non manuels pour l'optimisation
     df_opt = df[~df["Immatriculation"].isin(selected_matricules)].copy()
-    if df_opt.empty:
-        df_used = df.copy()
-    else:
+    if not df_opt.empty:
         df_used = df_opt.copy()
+    else:
+        df_used = df.copy()
     df_used.reset_index(drop=True, inplace=True)
 
-    # Définition des paliers
+    # --- Définition des paliers et intervalles ---
     L = [0, 4000, 8000, 11000, 14001]
     U = [4000, 8000, 11000, 14000, 999999]
     num_paliers = 5
@@ -155,7 +139,7 @@ if uploaded_file is not None:
         4: ">14000"
     }
 
-    # Données tarifaires de référence
+    # Données tarifaires de référence pour chaque prestataire
     tarif_data = [
         {'PRESTATAIRE': 'COMPTOIR SERVICE', 'KM': '[0 - 4000]', 'A fixe': 4.2, 'Quote part gasoil': 0.35},
         {'PRESTATAIRE': 'COMPTOIR SERVICE', 'KM': '[4000-8000]', 'A fixe': 4.2, 'Quote part gasoil': 0.35},
@@ -184,12 +168,11 @@ if uploaded_file is not None:
 
     ref_intervals = ["[0-4000]", "[4000-8000]", "[8000-11000]", "[11000-14000]", ">14000"]
 
-    # IMPORTANT : construire updated_tarifs pour TOUS les transporteurs de df, pas seulement df_used
+    # Construire le dictionnaire updated_tarifs pour TOUS les transporteurs de df
     all_transporters = df["Transporteur"].unique()
     updated_tarifs = {}
     for prest in all_transporters:
         prest_tarifs = [None] * 5
-        # On parcourt le tarif_data
         for d in tarif_data:
             if d["PRESTATAIRE"].lower() == prest.lower():
                 interval_norm = normalize_interval(d["KM"])
@@ -197,27 +180,24 @@ if uploaded_file is not None:
                     idx = ref_intervals.index(interval_norm)
                     prest_tarifs[idx] = d["A fixe"] + d["Quote part gasoil"] * fuel_price
         updated_tarifs[prest] = prest_tarifs
-
     logging.info(f"Tarifs mis à jour (pour tous transporteurs) : {updated_tarifs}")
     tarifs = updated_tarifs
 
-    # Nombre de camions à optimiser
+    # Optimisation sur df_used (camions non manuels)
     N = len(df_used)
     trucks = range(N)
+    paliers = range(num_paliers)
 
-    # paliers = range(num_paliers)  # déjà défini
     eligible_trucks = [i for i in trucks if df_used.loc[i, "Total"] + max_km_par_camion >= 8000]
     logging.info(f"{len(eligible_trucks)} camions éligibles sur {N} pour atteindre 8000 km.")
 
     if st.button("Lancer l'optimisation"):
         if total_pourc != 100:
             st.error("La somme des pourcentages doit être égale à 100%.")
+            logging.error("La somme des pourcentages n'est pas égale à 100%.")
             st.stop()
 
         lambda_penalty = 10000
-        num_paliers = 5
-        paliers = range(num_paliers)
-      
         s_plus = pulp.LpVariable.dicts("s_plus", paliers, lowBound=0, cat=pulp.LpContinuous)
         s_minus = pulp.LpVariable.dicts("s_minus", paliers, lowBound=0, cat=pulp.LpContinuous)
 
@@ -232,68 +212,60 @@ if uploaded_file is not None:
                                               cat=pulp.LpContinuous)
                 for i in trucks:
                     km_deja = df_used.loc[i, "Total"]
-                    model += x[i] == km_deja + Delta[i]
+                    model += x[i] == km_deja + Delta[i], f"Def_x_{i}"
                 model += pulp.lpSum(Delta[i] for i in trucks) == R, "Total_Delta"
 
                 y = pulp.LpVariable.dicts("y", (trucks, paliers), cat=pulp.LpBinary)
                 z = pulp.LpVariable.dicts("z", (trucks, paliers), lowBound=0, cat=pulp.LpContinuous)
-
-                # x[i] = sum(z[i][j])
                 for i in trucks:
-                    model += x[i] == pulp.lpSum(z[i][j] for j in paliers)
-
-                # un seul palier par camion
+                    model += x[i] == pulp.lpSum(z[i][j] for j in paliers), f"Decoupage_x_{i}"
                 for i in trucks:
-                    model += pulp.lpSum(y[i][j] for j in paliers) == 1
+                    model += pulp.lpSum(y[i][j] for j in paliers) == 1, f"Unique_palier_{i}"
 
                 M = 999999
-                # Contraintes z-y
                 for i in trucks:
                     km_deja = df_used.loc[i, "Total"]
                     for j in paliers:
                         LB_ij = max(km_deja, L[j])
-                        model += z[i][j] >= LB_ij * y[i][j]
-                        model += z[i][j] <= U[j] * y[i][j] + M * (1 - y[i][j])
+                        model += z[i][j] >= LB_ij * y[i][j], f"LB_{i}_{j}"
+                        model += z[i][j] <= U[j] * y[i][j] + M * (1 - y[i][j]), f"UB_{i}_{j}"
                         if km_deja > U[j]:
-                            model += y[i][j] == 0
+                            model += y[i][j] == 0, f"Exclure_{i}_{j}"
 
-                # Bornes min/max paliers
                 for i in trucks:
-                    model += x[i] <= 4000 + M*(1 - y[i][0])
-                    model += x[i] >= 4000 * y[i][1]
-                    model += x[i] <= 8000 + M*(1 - y[i][1])
-                    model += x[i] >= 8000 * y[i][2]
-                    model += x[i] <= 11000 + M*(1 - y[i][2])
-                    model += x[i] >= 11000 * y[i][3]
-                    model += x[i] <= 14000 + M*(1 - y[i][3])
-                    model += x[i] >= 14001 * y[i][4]
+                    model += x[i] <= 4000 + M * (1 - y[i][0]), f"Max_x_palier0_{i}"
+                    model += x[i] >= 4000 * y[i][1], f"Min_x_palier1_{i}"
+                    model += x[i] <= 8000 + M * (1 - y[i][1]), f"Max_x_palier1_{i}"
+                    model += x[i] >= 8000 * y[i][2], f"Min_x_palier2_{i}"
+                    model += x[i] <= 11000 + M * (1 - y[i][2]), f"Max_x_palier2_{i}"
+                    model += x[i] >= 11000 * y[i][3], f"Min_x_palier3_{i}"
+                    model += x[i] <= 14000 + M * (1 - y[i][3]), f"Max_x_palier3_{i}"
+                    model += x[i] >= 14001 * y[i][4], f"Min_x_palier4_{i}"
 
-                # Contraintes souples sur la répartition
                 for j in paliers:
                     T_j = ([p0, p1, p2, p3, p4][j] / 100.0) * N
-                    model += (pulp.lpSum(y[i][j] for i in trucks) - T_j) == (s_plus[j] - s_minus[j])
+                    model += (pulp.lpSum(y[i][j] for i in trucks) - T_j) == (s_plus[j] - s_minus[j]), f"Deviat_palier_{j}"
 
-                # Fonction objectif = coût + pénalité
                 model += (
                     pulp.lpSum(
                         tarifs[df_used.loc[i, "Transporteur"]][j] * z[i][j]
                         for i in trucks for j in paliers
                     )
                     + lambda_penalty * pulp.lpSum(s_plus[j] + s_minus[j] for j in paliers)
-                )
+                ), "Cout_Total_et_Deviations"
 
                 solver = PULP_CBC_CMD(msg=1, timeLimit=60)
                 model.solve(solver=solver)
                 status = pulp.LpStatus[model.status]
+                logging.info(f"Status du solveur : {status}")
 
             except Exception as e:
                 st.error(f"Erreur lors de l'optimisation : {e}")
+                logging.error(f"Erreur d'optimisation : {e}")
                 st.stop()
 
         if status in ["Optimal", "Not Solved"]:
             st.success("Optimisation terminée !")
-
-            # Récapitulatif
             recaps = []
             for j in paliers:
                 count = sum(pulp.value(y[i][j]) for i in trucks)
@@ -305,8 +277,8 @@ if uploaded_file is not None:
             recap_df = pd.DataFrame(recaps)
             st.write("### Récapitulatif de répartition par palier")
             st.dataframe(recap_df)
+            logging.info(f"Récapitulatif de répartition: {recap_df.to_dict(orient='records')}")
 
-            # Récupération des résultats
             resultats = []
             for i in trucks:
                 transporteur = df_used.loc[i, "Transporteur"]
@@ -333,24 +305,12 @@ if uploaded_file is not None:
                     "Tarif (MAD/km)": tarif_val
                 })
             df_resultats = pd.DataFrame(resultats)
-
-            # Ligne total pour l'optimisation
-            line_total_opt = {
-                "Immatriculation": "Total (Opt.)",
-                "Transporteur": "",
-                "Total": df_resultats["Total"].sum(),
-                "Variation": df_resultats["Variation"].sum(),
-                "Total Finale": df_resultats["Total Finale"].sum(),
-                "Intervalle Palier": "",
-                "Tarif (MAD/km)": ""
-            }
-            df_resultats = pd.concat([df_resultats, pd.DataFrame([line_total_opt])], ignore_index=True)
-
-            # Calculer tarif pour camions manuels
-            manual_rows = []
+            # Ne pas ajouter de ligne "Total (Opt.)" séparée ici ; on combine directement
+            # Concaténer les résultats optimisés avec les camions manuels (si disponibles)
             if not df_manual.empty:
+                manual_rows = []
                 for idx, row in df_manual.iterrows():
-                    total_finale = row["Total Finale"]
+                    total_finale = row["Total Mensuel Saisi"]
                     if total_finale <= 4000:
                         interval_str, palier_idx = "[0 - 4000]", 0
                     elif total_finale <= 8000:
@@ -361,11 +321,8 @@ if uploaded_file is not None:
                         interval_str, palier_idx = "[11001 - 14000]", 3
                     else:
                         interval_str, palier_idx = ">14000", 4
-
                     prest = row["Transporteur"]
-                    # On récupère le tarif s'il existe
-                    tarif_manual = tarifs[prest][palier_idx] if (prest in tarifs and tarifs[prest][palier_idx]) else None
-
+                    tarif_manual = tarifs[prest][palier_idx] if (prest in tarifs and tarifs[prest][palier_idx] is not None) else None
                     manual_rows.append({
                         "Immatriculation": row["Immatriculation"],
                         "Transporteur": row["Transporteur"],
@@ -375,12 +332,13 @@ if uploaded_file is not None:
                         "Intervalle Palier": interval_str,
                         "Tarif (MAD/km)": tarif_manual
                     })
-            df_manual_calc = pd.DataFrame(manual_rows)
+                df_manual_calc = pd.DataFrame(manual_rows)
+            else:
+                df_manual_calc = pd.DataFrame()
 
-            # Concaténer d'abord df_resultats (optimisés) puis df_manual_calc
+            # Concaténer les résultats d'optimisation (df_resultats) et manuels (df_manual_calc)
             final_df = pd.concat([df_resultats, df_manual_calc], ignore_index=True)
-
-            # Recalcule la ligne total finale globale
+            # Calculer une seule ligne "Total (Global)" sur l'ensemble final
             total_line = {
                 "Immatriculation": "Total (Global)",
                 "Transporteur": "",
@@ -392,7 +350,6 @@ if uploaded_file is not None:
             }
             final_df = pd.concat([final_df, pd.DataFrame([total_line])], ignore_index=True)
 
-            # Export
             towrite = io.BytesIO()
             with pd.ExcelWriter(towrite, engine="openpyxl") as writer:
                 final_df.to_excel(writer, index=False, sheet_name="Optimisation")
@@ -406,5 +363,6 @@ if uploaded_file is not None:
             )
         else:
             st.error("Aucune solution optimale n'a été trouvée dans le délai imparti ou le problème est infaisable.")
+            logging.error("Problème infaisable ou temps dépassé.")
 else:
     st.info("Veuillez charger un fichier Excel pour commencer.")
