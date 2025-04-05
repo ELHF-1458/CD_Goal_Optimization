@@ -39,7 +39,7 @@ st.sidebar.write(f"Prix Carburant actuel : {fuel_price} MAD/L")
 mode_total = st.sidebar.selectbox("Mode de calcul du total mensuel", options=["Automatique", "Manuel"])
 
 if mode_total == "Manuel":
-    total_mois_manuel = st.sidebar.number_input("Total kilométrage prévu pour le mois", value=100000, step=1000, format="%.0f")
+    total_mois_manuel = st.sidebar.number_input("Total kilométrage prévu pour le mois", value=100000.0, step=1000.0, format="%.0f")
 
 st.sidebar.header("Répartition par palier (%)")
 p0 = st.sidebar.slider("Palier [0 - 4000]", 0, 100, 20, 1)
