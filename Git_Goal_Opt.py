@@ -94,10 +94,10 @@ if uploaded_file is not None:
         total_mois = total_deja + round(jours_restants * moyenne_journaliere)
     else:
         total_mois = total_mois_manuel
-    st.write(f"**Total mensuel** = {total_mois}")
+    # st.write(f"**Total mensuel** = {total_mois}")
 
     R = total_mois - total_deja
-    st.write(f"**Km restants à répartir** = {R}")
+    # st.write(f"**Km restants à répartir** = {R}")
 
     # Calcul de Δ_min et Δ_max sur l'ensemble des jours restants
     min_km_par_camion = jours_restants * delta_min_day
