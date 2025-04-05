@@ -215,6 +215,9 @@ if uploaded_file is not None:
             st.stop()
 
         lambda_penalty = 10000
+        num_paliers = 5
+        paliers = range(num_paliers)
+      
         s_plus = pulp.LpVariable.dicts("s_plus", paliers, lowBound=0, cat=pulp.LpContinuous)
         s_minus = pulp.LpVariable.dicts("s_minus", paliers, lowBound=0, cat=pulp.LpContinuous)
 
