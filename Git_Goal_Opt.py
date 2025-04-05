@@ -46,6 +46,18 @@ selected_matricules = st.sidebar.multiselect(
     options=[]  # Nous mettrons à jour cette liste après le chargement du fichier
 )
 
+st.sidebar.header("Répartition par palier (%)")
+p0 = st.sidebar.slider("Palier [0 - 4000]", 0, 100, 20, 1)
+p1 = st.sidebar.slider("Palier [4000 - 8000]", 0, 100, 20, 1)
+p2 = st.sidebar.slider("Palier [8000 - 11000]", 0, 100, 20, 1)
+p3 = st.sidebar.slider("Palier [11000 - 14000]", 0, 100, 20, 1)
+p4 = st.sidebar.slider("Palier (>14000)", 0, 100, 20, 1)
+total_pourc = p0 + p1 + p2 + p3 + p4
+st.sidebar.write(f"Somme des pourcentages : {total_pourc} %")
+if total_pourc != 100:
+    st.sidebar.error("La somme des pourcentages doit être égale à 100 %.")
+    st.stop()
+
 # --- Chargement du fichier d'entrée ---
 uploaded_file = st.file_uploader("Choisissez le fichier Excel d'entrée (colonnes : Transporteur, Immatriculation, Total)", type=["xlsx"])
 if uploaded_file is not None:
