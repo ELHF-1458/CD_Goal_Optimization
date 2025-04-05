@@ -45,7 +45,7 @@ st.sidebar.header("Répartition par palier (%)")
 p0 = st.sidebar.slider("Palier [0 - 4000]", 0, 100, 20, 1)
 p1 = st.sidebar.slider("Palier [4000 - 8000]", 0, 100, 20, 1)
 p2 = st.sidebar.slider("Palier [8000 - 11000]", 0, 100, 20, 1)
-p3 = st.sidebar.slider("Palier [11001 - 14000]", 0, 100, 20, 1)
+p3 = st.sidebar.slider("Palier [11000 - 14000]", 0, 100, 20, 1)
 p4 = st.sidebar.slider("Palier (>14000)", 0, 100, 20, 1)
 total_pourc = p0 + p1 + p2 + p3 + p4
 st.sidebar.write(f"Somme des pourcentages : {total_pourc} %")
@@ -82,7 +82,7 @@ if uploaded_file is not None:
     if selected_matricules:
         st.sidebar.write("Saisissez le total mensuel pour chaque camion sélectionné :")
         for matricule in selected_matricules:
-            total_manual = st.sidebar.number_input(f"Total mensuel pour {matricule}", value=0, step=1000, format="%.0f")
+            total_manual = st.sidebar.number_input(f"Total mensuel pour {matricule}", value=0.0, step=1000., format="%.0f")
             manual_totals[matricule] = total_manual
 
     total_deja = df["Total"].sum()
