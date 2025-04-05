@@ -77,8 +77,8 @@ if uploaded_file is not None:
     st.write(f"**Total déjà parcouru** = {total_deja}")
     
     if mode_total == "Automatique":
-    moyenne_journaliere = total_deja / jour_du_mois if jour_du_mois > 0 else 0
-    total_mois = total_deja + round(jours_restants * moyenne_journaliere)
+        moyenne_journaliere = total_deja / jour_du_mois if jour_du_mois > 0 else 0
+        total_mois = total_deja + round(jours_restants * moyenne_journaliere)
     else:
         total_mois = total_mois_manuel
 
