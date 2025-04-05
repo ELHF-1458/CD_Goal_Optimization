@@ -108,6 +108,40 @@ if uploaded_file is not None:
         df_manual = df[df["Immatriculation"].isin(selected_matricules)].copy()
         df_manual["Total Mensuel Saisi"] = df_manual["Immatriculation"].map(manual_totals)
         df_manual["Km Restants (Manuel)"] = df_manual["Total Mensuel Saisi"] - df_manual["Total"]
+        # Pour chaque camion manuel, déduire l'intervalle et calculer le tarif
+        # Nous utilisons ici les mêmes intervalles que pour l'optimisation
+        def determine_interval(total_final):
+            if total_final <= 4000:
+                return "[0 - 4000]", 0
+            elif total_final <= 8000:
+                return "[4000 - 8000]", 1
+            elif total_final <= 11000:
+                return "[8000 - 11000]", 2
+            elif total_final <= 14000:
+                return "[11001 - 14000]", 3
+            else:
+                return ">14000", 4
+
+        # Pour les camions manuels, "Total Finale" sera le total mensuel saisi
+        df_manual["Total Finale"] = df_manual["Total Mensuel Saisi"]
+        intervals = []
+        tarifs_manual = []
+        for idx, row in df_manual.iterrows():
+            interval_str, palier_index = determine_interval(row["Total Finale"])
+            intervals.append(interval_str)
+            # Récupérer le tarif mis à jour pour ce transporteur et ce palier
+            prest = row["Transporteur"]
+            t_val = None
+            if prest in manual_totals:  # cela ne devrait pas se produire
+                t_val = manual_totals[prest]
+            else:
+                # On utilise le dictionnaire des tarifs mis à jour (qui sera défini ci-dessous)
+                pass  # Nous définirons ensuite "tarifs" pour le modèle
+            tarifs_manual.append(None)  # Nous allons les calculer ensuite
+        df_manual["Intervalle Palier"] = intervals
+        # Nous ne calculerons pas encore le tarif pour les manuels ici, car nous allons utiliser la même logique que pour l'optimisation
+        # (Nous calculerons cela dans la suite du script, après mise à jour des tarifs)
+
         st.write("### Camions avec saisie manuelle")
         st.dataframe(df_manual)
     else:
@@ -314,20 +348,55 @@ if uploaded_file is not None:
             }
             df_resultats = pd.concat([df_resultats, pd.DataFrame([ligne_total])], ignore_index=True)
 
-            # Combiner les résultats d'optimisation avec les résultats manuels (si existants)
+            # Pour les camions manuels, calculer l'intervalle et le tarif selon leur Total Finale
             if not df_manual.empty:
-                # On renomme certaines colonnes pour assurer la cohérence
-                df_manual_renamed = df_manual.rename(columns={
-                    "Total Mensuel Saisi": "Total Finale",
-                    "Km Restants (Manuel)": "Variation"
-                })
-                df_manual_renamed["Intervalle Palier"] = "Manuel"
-                df_manual_renamed["Tarif (MAD/km)"] = "N/A"
-                final_df = pd.concat([df_resultats, df_manual_renamed[
-                    ["Immatriculation", "Transporteur", "Total", "Variation", "Total Finale", "Intervalle Palier", "Tarif (MAD/km)"]
-                ]], ignore_index=True)
+                manual_rows = []
+                for idx, row in df_manual.iterrows():
+                    # Pour un camion manuel, le Total Finale est celui saisi par l'utilisateur
+                    total_finale = row["Total Mensuel Saisi"]
+                    # Calculer l'intervalle correspondant
+                    if total_finale <= 4000:
+                        interval_str, palier_idx = "[0 - 4000]", 0
+                    elif total_finale <= 8000:
+                        interval_str, palier_idx = "[4000 - 8000]", 1
+                    elif total_finale <= 11000:
+                        interval_str, palier_idx = "[8000 - 11000]", 2
+                    elif total_finale <= 14000:
+                        interval_str, palier_idx = "[11001 - 14000]", 3
+                    else:
+                        interval_str, palier_idx = ">14000", 4
+                    # Récupérer le tarif mis à jour pour ce prestataire et ce palier
+                    prest = row["Transporteur"]
+                    tarif_manual = tarifs[prest][palier_idx] if prest in tarifs and tarifs[prest][palier_idx] is not None else None
+
+                    manual_rows.append({
+                        "Immatriculation": row["Immatriculation"],
+                        "Transporteur": row["Transporteur"],
+                        "Total": row["Total"],
+                        "Variation": row["Km Restants (Manuel)"],
+                        "Total Finale": total_finale,
+                        "Intervalle Palier": interval_str,
+                        "Tarif (MAD/km)": tarif_manual
+                    })
+                df_manual_calc = pd.DataFrame(manual_rows)
             else:
-                final_df = df_resultats
+                df_manual_calc = pd.DataFrame()
+
+            # Concaténer les résultats d'optimisation et les résultats manuels
+            final_df = pd.concat([df_resultats, df_manual_calc], ignore_index=True)
+            # Si vous souhaitez que les camions manuels apparaissent AVANT la ligne Total, on peut trier :
+            final_df = final_df[final_df["Immatriculation"] != "Total"]
+            # Calculer à nouveau la ligne Total sur l'ensemble combiné
+            total_line = {
+                "Immatriculation": "Total",
+                "Transporteur": "",
+                "Total": final_df["Total"].sum(),
+                "Variation": final_df["Variation"].sum(),
+                "Total Finale": final_df["Total Finale"].sum(),
+                "Intervalle Palier": "",
+                "Tarif (MAD/km)": ""
+            }
+            final_df = pd.concat([final_df, pd.DataFrame([total_line])], ignore_index=True)
 
             towrite = io.BytesIO()
             with pd.ExcelWriter(towrite, engine="openpyxl") as writer:
