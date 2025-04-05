@@ -35,6 +35,12 @@ delta_max_day = st.sidebar.number_input("Δ_max (km/jour)", value=550.0, step=10
 fuel_price = st.sidebar.number_input("Prix Carburant (MAD/L)", value=20.0, step=0.1, format="%.2f")
 st.sidebar.write(f"Prix Carburant actuel : {fuel_price} MAD/L")
 
+# Sélecteur pour le mode de calcul du total mensuel
+mode_total = st.sidebar.selectbox("Mode de calcul du total mensuel", options=["Automatique", "Manuel"])
+
+if mode_total == "Manuel":
+    total_mois_manuel = st.sidebar.number_input("Total kilométrage prévu pour le mois", value=100000, step=1000, format="%.0f")
+
 st.sidebar.header("Répartition par palier (%)")
 p0 = st.sidebar.slider("Palier [0 - 4000]", 0, 100, 20, 1)
 p1 = st.sidebar.slider("Palier [4000 - 8000]", 0, 100, 20, 1)
@@ -70,9 +76,12 @@ if uploaded_file is not None:
     total_deja = df["Total"].sum()
     st.write(f"**Total déjà parcouru** = {total_deja}")
     
-    # Calcul dynamique de total_mois basé sur la moyenne journalière
+    if mode_total == "Automatique":
     moyenne_journaliere = total_deja / jour_du_mois if jour_du_mois > 0 else 0
     total_mois = total_deja + round(jours_restants * moyenne_journaliere)
+    else:
+        total_mois = total_mois_manuel
+
     # st.write(f"**Estimation du total mensuel** = {total_mois}")
     
     R = total_mois - total_deja
