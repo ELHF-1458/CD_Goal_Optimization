@@ -328,7 +328,7 @@ if uploaded_file is not None:
                     elif total_finale < 11000:
                         interval_str, palier_idx = "[8000 - 11000]", 2
                     elif total_finale <= 14000:
-                        interval_str, palier_idx = "[11001 - 14000]", 3
+                        interval_str, palier_idx = "[11000 - 14000]", 3
                     else:
                         interval_str, palier_idx = ">14000", 4
                     prest = row["Transporteur"]
@@ -348,6 +348,15 @@ if uploaded_file is not None:
 
             # Concaténer les résultats d'optimisation (df_resultats) et manuels (df_manual_calc)
             final_df = pd.concat([df_resultats, df_manual_calc], ignore_index=True)
+
+            # Calcul du coût total (cf. ci-dessus)
+            if not df_manual_calc.empty:
+                manual_cost = (df_manual_calc["Total Finale"] * df_manual_calc["Tarif (MAD/km)"]).sum()
+            else:
+                manual_cost = 0
+            optimized_cost = pulp.value(model.objective)
+            overall_cost = optimized_cost + manual_cost
+          
             # Calculer une seule ligne "Total (Global)" sur l'ensemble final
             total_line = {
                 "Immatriculation": "Total (Global)",
@@ -356,7 +365,7 @@ if uploaded_file is not None:
                 "Variation": final_df["Variation"].sum(),
                 "Total Finale": final_df["Total Finale"].sum(),
                 "Intervalle Palier": "",
-                "Tarif (MAD/km)": ""
+                "Tarif (MAD/km)": round(overall_cost, 2)
             }
             final_df = pd.concat([final_df, pd.DataFrame([total_line])], ignore_index=True)
 
