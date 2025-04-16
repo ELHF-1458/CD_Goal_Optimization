@@ -90,13 +90,23 @@ if uploaded_file is not None:
 
     # Calcul du total mensuel selon le mode choisi
     if mode_total == "Automatique":
-        moyenne_journaliere = total_deja / jour_du_mois if jour_du_mois > 0 else 0
-        total_mois = total_deja + round(jours_restants * moyenne_journaliere)
+      moyenne_journaliere = total_deja / jour_du_mois if jour_du_mois > 0 else 0
+      total_mois = total_deja + round(jours_restants * moyenne_journaliere)
+      R = total_mois - total_deja
+      
     else:
-        total_mois = total_mois_manuel
-    # st.write(f"**Total mensuel** = {total_mois}")
+      # Dans le mode manuel, on souhaite utiliser la valeur saisie pour certains camions.
+      # Calcul du total mensuel pour les camions manuels
+      total_manuel = df[df["Immatriculation"].isin(selected_matricules)]["Total Mensuel Saisi"].sum()
+      # Calcul du total déjà parcouru pour les camions non manuels (à optimiser)
+      total_deja_opt = df[~df["Immatriculation"].isin(selected_matricules)]["Total"].sum()
+      # On définit le total mensuel comme la somme du total manuel et du total déjà parcouru des camions à optimiser.
+      total_mois = total_manuel + total_deja_opt
+      # Le kilométrage restant pour l’optimisation est alors :
+      R = total_mois - total_manuel - total_deja_opt
+      # st.write(f"**Total mensuel** = {total_mois}")
 
-    R = total_mois - total_deja
+    # R = total_mois - total_deja
     # st.write(f"**Km restants à répartir** = {R}")
 
     # Calcul de Δ_min et Δ_max sur l'ensemble des jours restants
