@@ -135,7 +135,7 @@ if uploaded_file is not None:
         0: "[0 - 4000]",
         1: "[4000 - 8000]",
         2: "[8000 - 11000]",
-        3: "[11001 - 14000]",
+        3: "[11000 - 14000]",
         4: ">14000"
     }
 
@@ -233,13 +233,13 @@ if uploaded_file is not None:
                             model += y[i][j] == 0, f"Exclure_{i}_{j}"
 
                 for i in trucks:
-                    model += x[i] <= 4000 + M * (1 - y[i][0]), f"Max_x_palier0_{i}"
+                    model += x[i] <= 3999 + M * (1 - y[i][0]), f"Max_x_palier0_{i}"
                     model += x[i] >= 4000 * y[i][1], f"Min_x_palier1_{i}"
-                    model += x[i] <= 8000 + M * (1 - y[i][1]), f"Max_x_palier1_{i}"
+                    model += x[i] <= 7999 + M * (1 - y[i][1]), f"Max_x_palier1_{i}"
                     model += x[i] >= 8000 * y[i][2], f"Min_x_palier2_{i}"
-                    model += x[i] <= 11000 + M * (1 - y[i][2]), f"Max_x_palier2_{i}"
+                    model += x[i] <= 10999 + M * (1 - y[i][2]), f"Max_x_palier2_{i}"
                     model += x[i] >= 11000 * y[i][3], f"Min_x_palier3_{i}"
-                    model += x[i] <= 14000 + M * (1 - y[i][3]), f"Max_x_palier3_{i}"
+                    model += x[i] <= 14000+ M * (1 - y[i][3]), f"Max_x_palier3_{i}"
                     model += x[i] >= 14001 * y[i][4], f"Min_x_palier4_{i}"
 
                 for j in paliers:
@@ -311,11 +311,11 @@ if uploaded_file is not None:
                 manual_rows = []
                 for idx, row in df_manual.iterrows():
                     total_finale = row["Total Mensuel Saisi"]
-                    if total_finale <= 4000:
+                    if total_finale < 4000:
                         interval_str, palier_idx = "[0 - 4000]", 0
-                    elif total_finale <= 8000:
+                    elif total_finale < 8000:
                         interval_str, palier_idx = "[4000 - 8000]", 1
-                    elif total_finale <= 11000:
+                    elif total_finale < 11000:
                         interval_str, palier_idx = "[8000 - 11000]", 2
                     elif total_finale <= 14000:
                         interval_str, palier_idx = "[11001 - 14000]", 3
